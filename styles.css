@@ -1,0 +1,14 @@
+body {
+    height: 100vh;
+    font-family: "Press Start 2P", system-ui;
+    font-weight: 400;
+    font-style: normal;
+    background: linear-gradient(to bottom, #4b6cb7 0%, #182848 100%) no-repeat center / cover;
+    color: #fff;
+    overflow: hidden;
+}
+
+#tetris {
+    border: 1px solid #fff;
+    margin-bottom: 1rem;
+}
