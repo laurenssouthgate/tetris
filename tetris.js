@@ -2,10 +2,39 @@ const STORAGE_KEY = 'TETRIS_HIGH_SCORE'
 
 const canvas = document.getElementById('tetris')
 const context = canvas.getContext('2d')
+const rotateLeftButton = document.getElementById('rot-left')
+const rotateRightButton = document.getElementById('rot-right')
+const leftButton = document.getElementById('left')
+const downButton = document.getElementById('down')
+const rightButton = document.getElementById('right')
 
 let dropCounter = 0
 let dropInterval = 1000
 let lastTime = 0
+
+// Add button hold state tracking
+const buttonState = {
+    left: false,
+    right: false,
+    down: false
+}
+
+// Add repeat interval for held buttons
+let repeatInterval = null
+const REPEAT_DELAY = 100 // milliseconds between repeats
+
+const startRepeat = (action) => {
+    if (repeatInterval) return
+    action() // Execute immediately
+    repeatInterval = setInterval(action, REPEAT_DELAY)
+}
+
+const stopRepeat = () => {
+    if (repeatInterval) {
+        clearInterval(repeatInterval)
+        repeatInterval = null
+    }
+}
 
 context.scale(20, 20)
 
@@ -229,19 +258,14 @@ const updateScore = () => {
 }
 
 const updateHighScore = () => {
-    const localScore = localStorage.getItem(STORAGE_KEY)
+    const localScore = JSON.parse(localStorage.getItem(STORAGE_KEY)) || 0
 
-    if (!localScore) {
-        localStorage.setItem(STORAGE_KEY, player.score)
+    if (player.score > localScore) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(player.score))
+        document.getElementById('high-score').innerHTML = `<span class="high-score">High Score: ${player.score}</span>`
+    } else {
+        document.getElementById('high-score').innerHTML = `<span class="high-score">High Score: ${localScore}</span>`
     }
-
-    if (localScore) {
-        if (localScore > player.score) return
-        
-        localStorage.setItem(STORAGE_KEY, player.score)
-    }
-
-    document.getElementById('high-score').innerHTML = `<span class="high-score">High Score: ${localScore ?? 0}</span>`
 }
 
 const update = (time = 0) => {
@@ -276,27 +300,129 @@ const player = {
     score: 0
 }
 
+// Add event listeners only if buttons exist
+if (rotateLeftButton) {
+    rotateLeftButton.addEventListener('click', () => playerRotate(-1))
+    rotateLeftButton.addEventListener('touchstart', (e) => {
+        e.preventDefault()
+        playerRotate(-1)
+    })
+}
+
+if (rotateRightButton) {
+    rotateRightButton.addEventListener('click', () => playerRotate(1))
+    rotateRightButton.addEventListener('touchstart', (e) => {
+        e.preventDefault()
+        playerRotate(1)
+    })
+}
+
+if (leftButton) {
+    leftButton.addEventListener('mousedown', () => {
+        buttonState.left = true
+        startRepeat(() => playerMove(-1))
+    })
+    leftButton.addEventListener('mouseup', () => {
+        buttonState.left = false
+        if (!buttonState.right && !buttonState.down) stopRepeat()
+    })
+    leftButton.addEventListener('mouseleave', () => {
+        buttonState.left = false
+        if (!buttonState.right && !buttonState.down) stopRepeat()
+    })
+    leftButton.addEventListener('touchstart', (e) => {
+        e.preventDefault()
+        buttonState.left = true
+        startRepeat(() => playerMove(-1))
+    })
+    leftButton.addEventListener('touchend', () => {
+        buttonState.left = false
+        if (!buttonState.right && !buttonState.down) stopRepeat()
+    })
+}
+
+if (rightButton) {
+    rightButton.addEventListener('mousedown', () => {
+        buttonState.right = true
+        startRepeat(() => playerMove(1))
+    })
+    rightButton.addEventListener('mouseup', () => {
+        buttonState.right = false
+        if (!buttonState.left && !buttonState.down) stopRepeat()
+    })
+    rightButton.addEventListener('mouseleave', () => {
+        buttonState.right = false
+        if (!buttonState.left && !buttonState.down) stopRepeat()
+    })
+    rightButton.addEventListener('touchstart', (e) => {
+        e.preventDefault()
+        buttonState.right = true
+        startRepeat(() => playerMove(1))
+    })
+    rightButton.addEventListener('touchend', () => {
+        buttonState.right = false
+        if (!buttonState.left && !buttonState.down) stopRepeat()
+    })
+}
+
+if (downButton) {
+    downButton.addEventListener('mousedown', () => {
+        buttonState.down = true
+        startRepeat(() => playerDrop())
+    })
+    downButton.addEventListener('mouseup', () => {
+        buttonState.down = false
+        if (!buttonState.left && !buttonState.right) stopRepeat()
+    })
+    downButton.addEventListener('mouseleave', () => {
+        buttonState.down = false
+        if (!buttonState.left && !buttonState.right) stopRepeat()
+    })
+    downButton.addEventListener('touchstart', (e) => {
+        e.preventDefault()
+        buttonState.down = true
+        startRepeat(() => playerDrop())
+    })
+    downButton.addEventListener('touchend', () => {
+        buttonState.down = false
+        if (!buttonState.left && !buttonState.right) stopRepeat()
+    })
+}
+
+// Update keyboard controls to also support holding
 document.addEventListener('keydown', e => {
-    console.log(e)
-
     if (e.key === 'ArrowLeft') {
-        playerMove(-1)
+        buttonState.left = true
+        startRepeat(() => playerMove(-1))
     }
-
     if (e.key === 'ArrowRight') {
-        playerMove(1)
+        buttonState.right = true
+        startRepeat(() => playerMove(1))
     }
-
     if (e.key === 'ArrowDown') {
-        playerDrop()
+        buttonState.down = true
+        startRepeat(() => playerDrop())
     }
-
     if (e.key === 'q') {
         playerRotate(-1)
     }
-
     if (e.key === 'e') {
         playerRotate(1)
+    }
+})
+
+document.addEventListener('keyup', e => {
+    if (e.key === 'ArrowLeft') {
+        buttonState.left = false
+        if (!buttonState.right && !buttonState.down) stopRepeat()
+    }
+    if (e.key === 'ArrowRight') {
+        buttonState.right = false
+        if (!buttonState.left && !buttonState.down) stopRepeat()
+    }
+    if (e.key === 'ArrowDown') {
+        buttonState.down = false
+        if (!buttonState.left && !buttonState.right) stopRepeat()
     }
 })
 
