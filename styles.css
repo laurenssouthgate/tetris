@@ -13,7 +13,7 @@ body {
         align-items: center;
 
         & canvas {
-            width: calc(240px * 0.8);
+            width: calc(240px * 0.6);
         }
     }
 
